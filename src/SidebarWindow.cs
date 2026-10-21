@@ -22,10 +22,20 @@ public sealed class SidebarWindow : Window
     FileSystemWatcher? _watcher;
     Native.WinEventProc? _hookProc;
     IntPtr _hook, _hwnd, _targetMonitor;
+    Config _fileConfig = new();
     Config _config = new();
+    List<Rule> _rules = [];
+    OptionsWindow? _options;
     bool _barRegistered;
     int _active = -1;
     int _ticks;
+
+    // Voor het optievenster.
+    internal UserState User { get; } = UserState.Load();
+    /// <summary>Alleen voor deze sessie: bij de volgende start staan alle tegels er weer.</summary>
+    internal HashSet<string> Hidden { get; } = [];
+    internal IReadOnlyList<Rule> Rules => _rules;
+    internal Config Effective => _config;
 
     public SidebarWindow(string configPath)
     {
@@ -37,15 +47,18 @@ public sealed class SidebarWindow : Window
         ShowInTaskbar = false;
         Topmost = true;
         Background = new SolidColorBrush(Color.FromRgb(0x0F, 0x11, 0x15));
-        Content = _panel;
+        Content = BuildLayout();
         Width = 300;
         Height = 600;
 
         var menu = new ContextMenu();
+        var options = new MenuItem { Header = "Opties…" };
+        options.Click += (_, _) => OpenOptions();
         var reload = new MenuItem { Header = "Config herladen" };
         reload.Click += (_, _) => ApplyConfig();
         var exit = new MenuItem { Header = "Afsluiten" };
         exit.Click += (_, _) => Close();
+        menu.Items.Add(options);
         menu.Items.Add(reload);
         menu.Items.Add(exit);
         ContextMenu = menu;
@@ -78,31 +91,81 @@ public sealed class SidebarWindow : Window
         base.OnClosed(e);
     }
 
+    Grid BuildLayout()
+    {
+        var gear = new TextBlock
+        {
+            Text = "", // tandwiel in Segoe MDL2 Assets
+            FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
+            FontSize = 18,
+            Foreground = Brushes.White,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        var button = new Border
+        {
+            Width = 40,
+            Height = 40,
+            CornerRadius = new CornerRadius(20),
+            Background = new SolidColorBrush(Color.FromRgb(0x1B, 0x1F, 0x29)),
+            Margin = new Thickness(14),
+            Opacity = 0.35,
+            Child = gear,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            ToolTip = "Opties",
+        };
+        button.MouseEnter += (_, _) => button.Opacity = 1;
+        button.MouseLeave += (_, _) => button.Opacity = 0.35;
+        button.MouseLeftButtonUp += (_, _) => OpenOptions();
+
+        var grid = new Grid();
+        grid.Children.Add(_panel);
+        grid.Children.Add(button);
+        return grid;
+    }
+
+    void OpenOptions()
+    {
+        if (_options != null) { _options.Activate(); return; }
+        _options = new OptionsWindow(this);
+        _options.Closed += (_, _) => _options = null;
+        _options.Show();
+    }
+
     void ApplyConfig()
     {
         try
         {
-            _config = Config.Load(_configPath);
+            _fileConfig = Config.Load(_configPath);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Config laden mislukt: {ex.Message}");
-            if (_items.Count > 0) return; // behoud de vorige werkende config
+            if (_rules.Count > 0) return; // behoud de vorige werkende config
         }
+        ApplyEffective(reposition: true);
+    }
 
-        var accent = (Color)ColorConverter.ConvertFromString(_config.Accent);
-        _panel.Children.Clear();
-        _items.Clear();
-        foreach (var rule in _config.Items)
+    /// <summary>Combineert config.json met wat de gebruiker in de app instelde.</summary>
+    internal void ApplyEffective(bool reposition)
+    {
+        _config = new Config
         {
-            var item = new ItemView(rule, accent);
-            _items.Add(item);
-            _panel.Children.Add(item.Root);
-        }
-        _active = -1;
+            Monitor = User.Monitor ?? _fileConfig.Monitor,
+            Width = User.Width ?? _fileConfig.Width,
+            FitFullscreen = User.FitFullscreen ?? _fileConfig.FitFullscreen,
+            Accent = User.Accent ?? _fileConfig.Accent,
+            Items = _fileConfig.Items,
+        };
+        // OrderBy is stabiel: tegels zonder bewaarde plek blijven in config-volgorde achteraan.
+        _rules = _fileConfig.Items.Concat(User.Extras)
+            .OrderBy(r => { var i = User.Order.IndexOf(r.Label); return i < 0 ? int.MaxValue : i; })
+            .ToList();
 
-        ResolveIcons();
-        PositionAppBar();
+        Rebuild();
+        if (reposition || _targetMonitor == IntPtr.Zero) PositionAppBar();
 
         if (_hook == IntPtr.Zero)
         {
@@ -112,6 +175,102 @@ public sealed class SidebarWindow : Window
             _tick.Start();
         }
         Evaluate();
+    }
+
+    /// <summary>Bouwt de tegels opnieuw op uit de regels, minus de verborgen; de highlight blijft staan.</summary>
+    internal void Rebuild()
+    {
+        var activeLabel = _active >= 0 && _active < _items.Count ? _items[_active].Rule.Label : null;
+        var accent = (Color)ColorConverter.ConvertFromString(_config.Accent);
+
+        _panel.Children.Clear();
+        _items.Clear();
+        foreach (var rule in _rules.Where(r => !Hidden.Contains(r.Label)))
+        {
+            var item = new ItemView(rule, accent);
+            WireTile(item);
+            _items.Add(item);
+            _panel.Children.Add(item.Root);
+        }
+        _active = -1;
+
+        ResolveIcons();
+        if (activeLabel != null)
+        {
+            var index = _items.FindIndex(i => i.Rule.Label == activeLabel);
+            if (index >= 0) SetActive(index);
+        }
+    }
+
+    void WireTile(ItemView item)
+    {
+        var root = item.Root;
+
+        var hide = new MenuItem { Header = "Verberg" };
+        hide.Click += (_, _) => { Hidden.Add(item.Rule.Label); Rebuild(); };
+        root.ContextMenu = new ContextMenu { Items = { hide } };
+
+        // Slepen om te herordenen: de tegel schuift mee zodra de muis het midden van een buur passeert.
+        Point start = default;
+        bool down = false, dragging = false;
+        root.MouseLeftButtonDown += (_, e) =>
+        {
+            start = e.GetPosition(_panel);
+            down = true;
+            dragging = false;
+            root.CaptureMouse();
+        };
+        root.MouseMove += (_, e) =>
+        {
+            if (!down) return;
+            var p = e.GetPosition(_panel);
+            if (!dragging)
+            {
+                if (Math.Abs(p.Y - start.Y) < 6) return;
+                dragging = true;
+                root.Cursor = System.Windows.Input.Cursors.SizeNS;
+            }
+
+            var cur = _panel.Children.IndexOf(root);
+            var target = cur;
+            if (cur > 0 && p.Y < CenterY((FrameworkElement)_panel.Children[cur - 1])) target = cur - 1;
+            else if (cur < _panel.Children.Count - 1 && p.Y > CenterY((FrameworkElement)_panel.Children[cur + 1])) target = cur + 1;
+            if (target == cur) return;
+
+            _panel.Children.RemoveAt(cur);
+            _panel.Children.Insert(target, root);
+            (_items[cur], _items[target]) = (_items[target], _items[cur]);
+            if (_active == cur) _active = target;
+            else if (_active == target) _active = cur;
+            _panel.UpdateLayout();
+        };
+        root.MouseLeftButtonUp += (_, _) =>
+        {
+            if (!down) return;
+            down = false;
+            root.ReleaseMouseCapture();
+            root.ClearValue(FrameworkElement.CursorProperty);
+            if (dragging) SaveOrder();
+            dragging = false;
+        };
+    }
+
+    double CenterY(FrameworkElement element) =>
+        element.TranslatePoint(new Point(0, 0), _panel).Y + element.ActualHeight / 2;
+
+    /// <summary>Verborgen tegels houden hun plek; de zichtbare worden in de vrije plekken herschikt.</summary>
+    void SaveOrder()
+    {
+        var visible = new Queue<Rule>(_items.Select(i => i.Rule));
+        _rules = _rules.Select(r => Hidden.Contains(r.Label) ? r : visible.Dequeue()).ToList();
+        User.Order = _rules.Select(r => r.Label).ToList();
+        User.Save();
+    }
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        _options?.Close();
+        base.OnClosing(e);
     }
 
     void StartWatching()

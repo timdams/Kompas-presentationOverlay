@@ -29,6 +29,12 @@ scherm te kijken.
   (nodig in fullscreen, waar de adresbalk verdwijnt).
 - `FitBesideSidebar` verkleint een fullscreen venster dat exact de monitor vult. Dat
   gebeurt alleen voor vensters die een regel matchen.
+- `UserState` (`%APPDATA%\PresentationOverlay\user.json`) bewaart wat de gebruiker in de app
+  doet: volgorde, extra apps, overrides voor monitor/breedte/fullscreen/accent. Verborgen
+  tegels zitten bewust alleen in het geheugen (`SidebarWindow.Hidden`). `ApplyEffective`
+  voegt config.json en user-state samen; `Rebuild` bouwt de tegels opnieuw op.
+- `OptionsWindow` is een los, activeerbaar venster op het hoofdscherm: de sidebar zelf
+  (NOACTIVATE) kan geen toetsenbordinvoer ontvangen, dus tekstvelden horen daar niet.
 - `Native.cs` bundelt alle P/Invoke. Coördinaten zijn fysieke pixels (manifest staat op
   PerMonitorV2); de breedte uit de config is in DIP en wordt per monitor omgerekend.
 

@@ -40,7 +40,21 @@ dotnet publish src -c Release -r win-x64 --self-contained false -o publish
 publish\PresentationOverlay.exe
 ```
 
-Rechtsklik op de sidebar voor **Config herladen** en **Afsluiten**.
+Rechtsklik op de sidebar voor **Opties**, **Config herladen** en **Afsluiten**.
+
+## Tegels aanpassen
+
+- **Verplaatsen:** sleep een tegel omhoog of omlaag. De volgorde wordt bewaard.
+- **Verbergen:** rechtsklik op een tegel, **Verberg**. Dit geldt alleen voor deze sessie: bij
+  de volgende start staan alle tegels er weer.
+- **Opties:** het tandwiel linksonder (of rechtsklik, **Opties…**) opent een venster op het
+  hoofdscherm. Daar haal je verborgen tegels terug, voeg je een extra app toe (kies een
+  draaiende app of blader naar een `.exe`), en stel je scherm, breedte, fullscreen-gedrag en
+  accentkleur in.
+
+Wat je in de app instelt staat in `%APPDATA%\PresentationOverlay\user.json` en wint van
+`config.json` voor scherm, breedte, fullscreen en accent. Verwijder dat bestand om terug te
+gaan naar de standaard.
 
 ## Configuratie
 
