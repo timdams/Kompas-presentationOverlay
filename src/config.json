@@ -1,0 +1,21 @@
+{
+  // "secondary" (eerste niet-primaire scherm), "primary", of een 0-gebaseerde index ("1")
+  "monitor": "secondary",
+  // breedte van de sidebar in DIP (96-dpi pixels)
+  "width": 260,
+  // fullscreen (F11) vensters verkleinen tot de ruimte rechts van de sidebar
+  "fitFullscreen": true,
+  "accent": "#E4002B",
+
+  // Volgorde = volgorde in de sidebar. Bij meerdere matches wint de eerste regel.
+  // Alleen vensters die op de gekozen monitor staan en in deze lijst passen tellen mee;
+  // al het andere laat de highlight ongemoeid.
+  "items": [
+    { "label": "VS Code",     "process": ["Code.exe"] },
+    { "label": "Claude",      "process": ["claude.exe"] },
+    { "label": "Presentatie", "process": ["brave.exe"], "urlContains": "slides",
+      "exe": "%ProgramFiles%\\BraveSoftware\\Brave-Browser\\Application\\brave.exe" },
+    { "label": "Terminal",    "process": ["WindowsTerminal.exe", "pwsh.exe", "powershell.exe", "cmd.exe"] },
+    { "label": "Verkenner",   "process": ["explorer.exe"], "className": "CabinetWClass" }
+  ]
+}

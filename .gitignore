@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+publish/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+.vscode/*
+!.vscode/settings.json
+
+# Claude Code lokale instellingen
+.claude/settings.local.json
+
+# OS
+Thumbs.db
+Desktop.ini
