@@ -44,7 +44,17 @@ public sealed class Config
     public int Width { get; set; } = 260;
     /// <summary>Fullscreen-vensters (F11) verkleinen tot de ruimte naast de sidebar.</summary>
     public bool FitFullscreen { get; set; } = true;
+    /// <summary>Windows-taakbalk automatisch verbergen zolang de overlay draait; teruggezet bij afsluiten.</summary>
+    public bool HideTaskbar { get; set; } = true;
     public string Accent { get; set; } = "#E4002B";
+    /// <summary>Highlightkleur per tegel uit het icoon halen; de accentkleur is dan de terugval.</summary>
+    public bool AutoAccent { get; set; } = true;
+    /// <summary>Globale sneltoetsen: modifiers+1..9 springt naar de n-de tegel, modifiers+0 toont/verbergt de sidebar.</summary>
+    public bool Hotkeys { get; set; } = true;
+    /// <summary>Bewust niet Ctrl+Alt: dat is AltGr, en zou @ # | { } op een Belgisch toetsenbord blokkeren.</summary>
+    public string HotkeyModifiers { get; set; } = "Ctrl+Alt+Shift";
+    /// <summary>Cirkel rond de muis met een ripple bij klikken, op het scherm van het publiek.</summary>
+    public bool CursorHighlight { get; set; } = true;
     public List<Rule> Items { get; set; } = [];
 
     static readonly JsonSerializerOptions Options = new()

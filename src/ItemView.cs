@@ -9,22 +9,24 @@ namespace PresentationOverlay;
 public sealed class ItemView
 {
     const double InactiveOpacity = 0.4;
-    static readonly Color InactiveBackground = Color.FromRgb(0x1B, 0x1F, 0x29);
 
-    readonly SolidColorBrush _background = new(InactiveBackground);
     readonly ScaleTransform _scale = new(1, 1);
     readonly Image _icon = new() { Width = 56, Height = 56, Stretch = Stretch.Uniform };
     readonly TextBlock _glyph;
-    readonly Color _accent;
+    readonly bool _autoAccent;
+    readonly TextBlock _number;
 
     public Rule Rule { get; }
     public Border Root { get; }
     public bool HasIcon { get; private set; }
+    /// <summary>Kleur van de highlight: uit het icoon als dat kan, anders de algemene accentkleur.</summary>
+    public Color Accent { get; private set; }
 
-    public ItemView(Rule rule, Color accent)
+    public ItemView(Rule rule, Color accent, bool autoAccent)
     {
         Rule = rule;
-        _accent = accent;
+        Accent = accent;
+        _autoAccent = autoAccent;
         RenderOptions.SetBitmapScalingMode(_icon, BitmapScalingMode.HighQuality);
 
         _glyph = new TextBlock
@@ -56,31 +58,49 @@ public sealed class ItemView
         row.Children.Add(iconHost);
         row.Children.Add(label);
 
+        // De kaart en de schuivende highlight worden door de sidebar achter de tegels getekend.
+        // Het nummer van de sneltoets, klein in de hoek en bewust bescheiden.
+        _number = new TextBlock
+        {
+            FontSize = 13,
+            FontFamily = new FontFamily("Segoe UI Semibold"),
+            Foreground = new SolidColorBrush(Color.FromArgb(0x99, 0xFF, 0xFF, 0xFF)),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -9, -9, 0),
+            IsHitTestVisible = false,
+        };
+
+        var content = new Grid();
+        content.Children.Add(row);
+        content.Children.Add(_number);
+
         Root = new Border
         {
-            Background = _background,
+            Background = Brushes.Transparent,
             CornerRadius = new CornerRadius(20),
             Padding = new Thickness(16, 14, 16, 14),
             Margin = new Thickness(10, 6, 10, 6),
-            Child = row,
+            Child = content,
             Opacity = InactiveOpacity,
             RenderTransform = _scale,
             RenderTransformOrigin = new Point(0.5, 0.5),
         };
     }
 
+    public void SetNumber(int? number) => _number.Text = number?.ToString() ?? "";
+
     public void SetIcon(ImageSource source)
     {
         _icon.Source = source;
         _glyph.Visibility = Visibility.Collapsed;
         HasIcon = true;
+        if (_autoAccent && IconColor.Dominant(source) is { } color) Accent = color;
     }
 
     public void SetActive(bool active, bool animate)
     {
         var duration = TimeSpan.FromMilliseconds(animate ? 250 : 0);
-        _background.BeginAnimation(SolidColorBrush.ColorProperty,
-            new ColorAnimation(active ? _accent : InactiveBackground, duration));
         Root.BeginAnimation(UIElement.OpacityProperty,
             new DoubleAnimation(active ? 1.0 : InactiveOpacity, duration));
 

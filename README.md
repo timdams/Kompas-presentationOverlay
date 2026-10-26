@@ -83,7 +83,12 @@ De config is `config.json` naast de exe. Een ander pad kan als argument:
 | `monitor` | `"secondary"` (eerste niet-primaire scherm, standaard), `"primary"`, of een 0-gebaseerde index als tekst (`"1"`) |
 | `width` | Breedte van de sidebar in DIP (96-dpi pixels). Standaard 260 |
 | `fitFullscreen` | Fullscreen vensters verkleinen tot naast de sidebar. Standaard `true` |
-| `accent` | Kleur van het actieve item |
+| `hideTaskbar` | Windows-taakbalk automatisch verbergen zolang de overlay draait. Standaard `true` |
+| `accent` | Kleur van het actieve item; terugval als `autoAccent` geen kleur in het icoon vindt |
+| `autoAccent` | Highlightkleur per tegel uit het icoon halen. Standaard `true`; een accent dat je in Opties kiest wint |
+| `hotkeys` | Globale sneltoetsen: modifiers + `1`-`9` springt naar de n-de tegel, modifiers + `0` toont/verbergt de sidebar. Standaard `true` |
+| `cursorHighlight` | Gele cirkel rond de muis met een ripple bij klikken, alleen op het scherm van het publiek. Standaard `true`. Aan/uit via het contextmenu of modifiers + `H` |
+| `hotkeyModifiers` | Standaard `"Ctrl+Alt+Shift"`. Ctrl+Alt is AltGr en blokkeert `@ # \|` op een Belgisch toetsenbord |
 | `items` | Lijst met regels, zie hieronder. De volgorde is de volgorde in de sidebar |
 
 ### Regels (`items`)
