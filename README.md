@@ -21,10 +21,33 @@ in zit licht op, zodat het publiek niet verward raakt bij al dat schakelen.
 - **Fullscreen (F11).** Een fullscreen-venster dat de hele monitor vult zou de sidebar
   overdekken. De tool verkleint zo'n venster tot de ruimte rechts van de sidebar.
 
-## Vereisten
+## Installeren
+
+Download de laatste versie bij [Releases](../../releases/latest). Er is geen .NET nodig.
+
+- **`PresentationOverlay-x.y.z-setup.exe`**: installer, zonder adminrechten. Installeert in
+  `%LOCALAPPDATA%\Programs\PresentationOverlay` en maakt een snelkoppeling in het Startmenu,
+  plus een snelkoppeling **Config bewerken**. Een update laat je `config.json` staan.
+- **`PresentationOverlay-x.y.z-portable.zip`**: uitpakken waar je wil en
+  `PresentationOverlay.exe` starten.
+
+Windows SmartScreen kan bij de eerste start waarschuwen omdat de exe niet ondertekend is:
+**Meer info**, **Toch uitvoeren**.
+
+### Een release maken
+
+Een tag pushen bouwt via [`.github/workflows/release.yml`](.github/workflows/release.yml) de
+installer (Inno Setup, script in `installer/`) en de zip, en zet ze in een GitHub-release:
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+## Vereisten om te bouwen
 
 - Windows 10/11
-- [.NET 9 SDK](https://dotnet.microsoft.com/download) om te bouwen
+- [.NET 9 SDK](https://dotnet.microsoft.com/download) (of nieuwer)
 
 ## Bouwen en starten
 

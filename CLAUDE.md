@@ -13,6 +13,10 @@ dotnet build src -c Release
 dotnet run --project src -c Release
 ```
 
+Release: een tag `vX.Y.Z` pushen start `.github/workflows/release.yml` (self-contained
+single-file publish, portable zip en Inno Setup-installer uit `installer/`). De installer
+installeert per gebruiker en overschrijft een bestaande `config.json` niet.
+
 Er zijn geen tests. Controleer wijzigingen door de app te starten en naar het tweede
 scherm te kijken.
 
